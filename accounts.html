@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Audioly - Settings</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="css/supabase-init.js"></script>
+    <style>
+        .settings-card { background: var(--surface); padding:24px; border-radius:8px; border:1px solid var(--border); margin-bottom:24px; }
+        .settings-row { display:flex; justify-content:space-between; align-items:center; padding:16px 0; border-bottom:1px solid var(--border); }
+        .settings-row:last-child { border:none; }
+    </style>
+</head>
+<body>
+
+    <div class="app-layout">
+        <aside class="sidebar-nav">
+            <div class="logo-text">Audioly<span>.</span></div>
+            <nav class="nav-links">
+                <a href="dashboard.html" class="nav-item"><span class="material-symbols-outlined">home</span>Home</a>
+                <a href="dashboard.html" class="nav-item"><span class="material-symbols-outlined">search</span>Search</a>
+                <a href="library.html" class="nav-item"><span class="material-symbols-outlined">library_music</span>Your Library</a>
+                <a href="#" class="nav-item active"><span class="material-symbols-outlined">settings</span>Settings</a>
+            </nav>
+        </aside>
+
+        <main class="main-workspace" style="padding:32px; max-width:800px;">
+            <h1 style="margin-bottom:32px;">System Settings</h1>
+
+            <div class="settings-card">
+                <h3>Edit User Profile</h3>
+                <div style="margin-top:16px; display:flex; flex-direction:column; gap:8px;">
+                    <label style="color:var(--text-muted); font-size:14px;">Display Username Handle</label>
+                    <input type="text" id="settings-username" style="padding:12px; background:#121212; border:1px solid var(--border); color:#fff; border-radius:6px; outline:none; max-width:400px;">
+                </div>
+                <button class="btn-primary" style="margin-top:16px;" onclick="saveProfileChanges()">Save Alterations</button>
+            </div>
+
+            <div class="settings-card">
+                <h3>Preferences & System Options</h3>
+                
+                <div class="settings-row">
+                    <div>
+                        <strong>Light Interface Theme</strong>
+                        <p style="color:var(--text-muted); font-size:12px;">Toggle light mode variant rules.</p>
+                    </div>
+                    <input type="checkbox" id="pref-theme-toggle" onchange="toggleApplicationTheme()" style="width:20px; height:20px; accent-color:var(--primary);">
+                </div>
+
+                <div class="settings-row">
+                    <div>
+                        <strong>Push Notifications</strong>
+                        <p style="color:var(--text-muted); font-size:12px;">Receive continuous alerts regarding recent track contributions.</p>
+                    </div>
+                    <input type="checkbox" id="pref-notify" checked style="width:20px; height:20px; accent-color:var(--primary);">
+                </div>
+
+                <div class="settings-row">
+                    <div>
+                        <strong>Incognito Listening Mode</strong>
+                        <p style="color:var(--text-muted); font-size:12px;">Prevent playback history from parsing into library rows.</p>
+                    </div>
+                    <input type="checkbox" id="pref-privacy" style="width:20px; height:20px; accent-color:var(--primary);">
+                </div>
+            </div>
+
+            <div class="settings-card" style="border-color:#f15c5c;">
+                <h3 style="color:#f15c5c;">Administrative Maintenance Deck</h3>
+                <div style="display:flex; gap:16px; margin-top:16px; flex-wrap:wrap;">
+                    <button class="btn-secondary" onclick="window.location.href='index.html'">Switch Active Session</button>
+                    <button class="btn-secondary" style="border-color:#f15c5c; color:#f15c5c;" onclick="performSignOut()">Sign Out Securely</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let currentActiveUserObj = null;
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            currentActiveUserObj = await checkUserSession();
+            if(currentActiveUserObj) {
+                loadSettingsPreferences(currentActiveUserObj.id);
+            }
+        });
+
+        async function loadSettingsPreferences(uid) {
+            const sb = getSupabase();
+            const { data } = await sb.from('profiles').select('*').eq('id', uid).single();
+            if(data) {
+                document.getElementById('settings-username').value = data.username;
+                document.getElementById('pref-theme-toggle').checked = (data.theme_preference === 'light');
+                document.getElementById('pref-notify').checked = data.notifications_enabled;
+                document.getElementById('pref-privacy').checked = data.privacy_incognito;
+                
+                if(data.theme_preference === 'light') document.body.classList.add('light-theme');
+            }
+        }
+
+        async function saveProfileChanges() {
+            const name = document.getElementById('settings-username').value.trim();
+            const notify = document.getElementById('pref-notify').checked;
+            const privacy = document.getElementById('pref-privacy').checked;
+            if(!name) return alert('Username input required.');
+
+            const sb = getSupabase();
+            await sb.from('profiles').update({
+                username: name,
+                notifications_enabled: notify,
+                privacy_incognito: privacy,
+                updated_at: new Date()
+            }).eq('id', currentActiveUserObj.id);
+
+            alert('Profile database record layers updated successfully.');
+        }
+
+        async function toggleApplicationTheme() {
+            const useLight = document.getElementById('pref-theme-toggle').checked;
+            const targetTheme = useLight ? 'light' : 'dark';
+            
+            document.body.classList.toggle('light-theme', useLight);
+            
+            const sb = getSupabase();
+            await sb.from('profiles').update({ theme_preference: targetTheme }).eq('id', currentActiveUserObj.id);
+        }
+
+        async function performSignOut() {
+            await getSupabase().auth.signOut();
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>

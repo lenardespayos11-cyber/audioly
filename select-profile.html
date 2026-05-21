@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="utf-8">
+    <title>Audioly - Select Profile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { background: "#121212", surface: "#181818" } } }
+        }
+    </script>
+    <script src="css/supabase-init.js"></script>
+</head>
+<body class="bg-[#121212] text-white antialiased min-h-screen flex flex-col items-center justify-center p-6">
+
+    <div class="text-center mb-12">
+        <h1 class="text-4xl font-black tracking-tight mb-2">Who is listening?</h1>
+        <p class="text-zinc-500 text-sm">Select a profile context to unlock your audio studio workspace.</p>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 max-w-5xl w-full px-4 mb-12" id="profile-cards-grid-hook">
+        <p class="text-zinc-500 text-center col-span-full">Connecting to account vectors...</p>
+    </div>
+
+    <button class="px-6 py-3 border border-zinc-700 rounded-full text-zinc-400 hover:border-white hover:text-white transition-all text-sm font-semibold" onclick="createNewProfileContext()">Create Sub-Profile</button>
+
+    <script>
+        let currentAccountUser = null;
+
+        // Failsafe: Automatically provision a profile if user dashboard is empty
+        async function ensureDefaultProfileExists(userId) {
+            const sb = getSupabase();
+            if (!sb) return;
+            try {
+                const { data: profiles } = await sb.from('user_profiles').select('id').eq('account_id', userId);
+                if (!profiles || profiles.length === 0) {
+                    await sb.from('user_profiles').insert([
+                        { account_id: userId, profile_name: "Main Listener", avatar_url: "https://api.dicebear.com/7.x/bottts/svg?seed=Main" }
+                    ]);
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            currentAccountUser = await checkUserSession();
+            if (currentAccountUser) {
+                await ensureDefaultProfileExists(currentAccountUser.id);
+                renderProfileSelectionGateway();
+            }
+        });
+
+        async function renderProfileSelectionGateway() {
+            const sb = getSupabase();
+            try {
+                const { data: profiles } = await sb.from('user_profiles').select('*').eq('account_id', currentAccountUser.id);
+                const grid = document.getElementById('profile-cards-grid-hook');
+                grid.innerHTML = '';
+
+                profiles?.forEach(p => {
+                    grid.innerHTML += `
+                        <div class="flex flex-col items-center group cursor-pointer" onclick="bootActiveProfileSession('${p.id}')">
+                            <div class="relative w-28 h-28 rounded-xl mb-3 overflow-hidden border-2 border-transparent group-hover:border-violet-500 transition-all shadow-lg shadow-black/60">
+                                <img src="${p.avatar_url}" class="w-full h-full object-cover">
+                            </div>
+                            <span class="text-sm font-semibold text-zinc-400 group-hover:text-white transition-colors">${p.profile_name}</span>
+                        </div>
+                    `;
+                });
+            } catch(err) { console.error(err); }
+        }
+
+        async function createNewProfileContext() {
+            const handle = prompt("Enter profile name:");
+            if (!handle) return;
+            const sb = getSupabase();
+            const { error } = await sb.from('user_profiles').insert([{ account_id: currentAccountUser.id, profile_name: handle, avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(handle)}` }]);
+            if (error) alert(error.message);
+            else renderProfileSelectionGateway();
+        }
+
+        // REDIRECT ENGINE: Saves the active profile context data and moves directly to the player dashboard!
+        function bootActiveProfileSession(pid) {
+            setActiveProfileId(pid);
+            window.location.href = 'dashboard.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audioly - Welcome</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="css/supabase-init.js"></script>
+    <style>
+        .auth-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; padding: 20px; }
+        .auth-card { background: var(--surface); padding: 32px; border-radius: 12px; border: 1px solid var(--border); width: 100%; max-width: 400px; margin-top: 24px; }
+        .auth-card input { width: 100%; padding: 12px; margin-bottom: 16px; background: #121212; border: 1px solid var(--border); color: #fff; border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <header class="top-header">
+        <div class="logo-text">Audioly<span>.</span></div>
+    </header>
+
+    <main class="auth-container">
+        <h1>Your Music. <span style="color: var(--primary); font-style: italic;">Perfected</span>.</h1>
+        <div class="auth-card">
+            <h3 id="auth-title" style="margin-bottom:16px;">Log In to Account</h3>
+            <input type="email" id="auth-email" placeholder="Email Address">
+            <input type="password" id="auth-password" placeholder="Password">
+            <input type="text" id="auth-username" placeholder="Username (Sign Up Only)" style="display: none;">
+            <button class="btn-primary" id="btn-auth-submit" style="width:100%;" onclick="handleAuthAction()">Continue</button>
+            <p id="auth-toggle-text" style="color:var(--text-muted); font-size:14px; text-align:center; margin-top:16px; cursor:pointer;" onclick="toggleAuthMode()">New to Audioly? Sign Up</p>
+        </div>
+    </main>
+
+    <script>
+        let isSignUpMode = false;
+        function toggleAuthMode() {
+            isSignUpMode = !isSignUpMode;
+            document.getElementById('auth-title').innerText = isSignUpMode ? 'Create Free Account' : 'Log In to Account';
+            document.getElementById('auth-username').style.display = isSignUpMode ? 'block' : 'none';
+            document.getElementById('auth-toggle-text').innerText = isSignUpMode ? 'Already have an account? Log In' : 'New to Audioly? Sign Up';
+        }
+
+        async function handleAuthAction() {
+            const client = getSupabase();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const username = document.getElementById('auth-username').value;
+
+            try {
+                if (isSignUpMode) {
+                    const { data, error } = await client.auth.signUp({ email, password });
+                    if (error) throw error;
+                    if (data.user) {
+                        await client.from('profiles').insert([{ id: data.user.id, username: username || email.split('@')[0] }]);
+                    }
+                    alert("Registration successful! Check your email for verification link.");
+                } else {
+                    const { error } = await client.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                    window.location.href = 'dashboard.html';
+                }
+            } catch (err) { alert(err.message); }
+        }
+    </script>
+</body>
+</html>
