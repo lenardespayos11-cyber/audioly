@@ -31,7 +31,7 @@
     <script>
         let currentAccountUser = null;
 
-        // Failsafe: Ensures at least one profile exists matching their signup state
+        // eensure nya na merong default profile na "Main Listener" pag new user na walang profile, para hindi blank page sa profile selection gateway
         async function ensureDefaultProfileExists(userId) {
             const sb = getSupabase();
             if (!sb) return;
@@ -71,7 +71,7 @@
                     `;
                 });
 
-                // Update visibility parameter metrics if profile threshold maximum of 3 is met
+                // limit ng profile creation to 3 contexts per account, since this is a free-tier MVP with no pagination or profile management features (delete, rename, etc.)
                 const controlBox = document.getElementById('creation-control-container');
                 if (profiles && profiles.length >= 3) {
                     controlBox.style.display = 'none';

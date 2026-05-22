@@ -248,7 +248,7 @@
             document.getElementById('avatar-dropdown-panel').classList.toggle('hidden');
         }
 
-        function navigateToSPAView(viewName, clearHistory = false) {
+            function navigateToSPAView(viewName, clearHistory = false) {
             if (clearHistory) navigationHistoryStack = [];
             else {
                 const currentActivePanel = document.querySelector('.app-view-panel.active-panel');
@@ -268,15 +268,21 @@
             const sidebarItem = document.getElementById(`nav-item-${viewName}`);
             if (sidebarItem) sidebarItem.classList.add('text-white', 'bg-zinc-900');
 
+            // --- MODIFIED CONDITION HERE ---
             const backBtn = document.getElementById('global-back-nav-btn');
-            if (navigationHistoryStack.length > 0) backBtn.classList.remove('hidden');
-            else backBtn.classList.add('hidden');
+            // The button will ONLY show up if the user is explicitly viewing an album page
+            if (viewName === 'album' && navigationHistoryStack.length > 0) {
+                backBtn.classList.remove('hidden');
+            } else {
+                backBtn.classList.add('hidden');
+            }
+            // -------------------------------
 
             if (viewName === 'home') syncAlbumsCatalogGrid();
             if (viewName === 'search') setupSearchIndexPipeline();
             if (viewName === 'library') syncCollectionLibraryPanelData();
             if (viewName === 'liked-playlist') syncLikedPlaylistTracksRows();
-        }
+}
 
         function handleNavigationBackAction() {
             if (navigationHistoryStack.length === 0) return;
