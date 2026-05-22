@@ -20,16 +20,18 @@
         <p class="text-zinc-500 text-sm">Select a profile context to unlock your audio studio workspace.</p>
     </div>
 
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 max-w-5xl w-full px-4 mb-12" id="profile-cards-grid-hook">
-        <p class="text-zinc-500 text-center col-span-full">Connecting to account vectors...</p>
+    <div class="flex flex-wrap items-center justify-center gap-12 max-w-4xl w-full px-4 mb-16" id="profile-cards-grid-hook">
+        <p class="text-zinc-500 text-center">Connecting to account vectors...</p>
     </div>
 
-    <button class="px-6 py-3 border border-zinc-700 rounded-full text-zinc-400 hover:border-white hover:text-white transition-all text-sm font-semibold" onclick="createNewProfileContext()">Create Sub-Profile</button>
+    <div id="creation-control-container" class="flex justify-center">
+        <button class="px-6 py-3 border border-zinc-700 rounded-full text-zinc-400 hover:border-white hover:text-white transition-all text-sm font-semibold" onclick="createNewProfileContext()">Create Sub-Profile</button>
+    </div>
 
     <script>
         let currentAccountUser = null;
 
-        // Failsafe: Automatically provision a profile if user dashboard is empty
+        // Failsafe: Ensures at least one profile exists matching their signup state
         async function ensureDefaultProfileExists(userId) {
             const sb = getSupabase();
             if (!sb) return;
@@ -60,27 +62,44 @@
 
                 profiles?.forEach(p => {
                     grid.innerHTML += `
-                        <div class="flex flex-col items-center group cursor-pointer" onclick="bootActiveProfileSession('${p.id}')">
-                            <div class="relative w-28 h-28 rounded-xl mb-3 overflow-hidden border-2 border-transparent group-hover:border-violet-500 transition-all shadow-lg shadow-black/60">
+                        <div class="flex flex-col items-center group cursor-pointer w-28 md:w-32 transition-transform duration-200 hover:scale-105" onclick="bootActiveProfileSession('${p.id}')">
+                            <div class="relative w-28 h-28 md:w-32 md:h-32 rounded-xl mb-4 overflow-hidden border-2 border-transparent group-hover:border-violet-500 transition-all shadow-xl shadow-black/40">
                                 <img src="${p.avatar_url}" class="w-full h-full object-cover">
                             </div>
-                            <span class="text-sm font-semibold text-zinc-400 group-hover:text-white transition-colors">${p.profile_name}</span>
+                            <span class="text-sm font-semibold text-zinc-400 group-hover:text-white transition-colors text-center truncate w-full">${p.profile_name}</span>
                         </div>
                     `;
                 });
+
+                // Update visibility parameter metrics if profile threshold maximum of 3 is met
+                const controlBox = document.getElementById('creation-control-container');
+                if (profiles && profiles.length >= 3) {
+                    controlBox.style.display = 'none';
+                } else {
+                    controlBox.style.display = 'flex';
+                }
+
             } catch(err) { console.error(err); }
         }
 
         async function createNewProfileContext() {
             const handle = prompt("Enter profile name:");
             if (!handle) return;
+            
             const sb = getSupabase();
+            
+            // Front-end sanity check to prevent database insertion trigger exceptions
+            const { data: activeCount } = await sb.from('user_profiles').select('id').eq('account_id', currentAccountUser.id);
+            if (activeCount && activeCount.length >= 3) {
+                alert("Maximum profile capacity reached. Only 3 profiles are permitted on this updated architecture plan.");
+                return;
+            }
+
             const { error } = await sb.from('user_profiles').insert([{ account_id: currentAccountUser.id, profile_name: handle, avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(handle)}` }]);
             if (error) alert(error.message);
             else renderProfileSelectionGateway();
         }
 
-        // REDIRECT ENGINE: Saves the active profile context data and moves directly to the player dashboard!
         function bootActiveProfileSession(pid) {
             setActiveProfileId(pid);
             window.location.href = 'dashboard.html';

@@ -2,64 +2,164 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
+    <title>Audioly - Your Music, Perfected</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audioly - Welcome</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { background: "#121212", surface: "#181818", border: "#2a2a2a", primary: "#8a2be2" }
+                }
+            }
+        }
+    </script>
     <script src="css/supabase-init.js"></script>
     <style>
-        .auth-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; padding: 20px; }
-        .auth-card { background: var(--surface); padding: 32px; border-radius: 12px; border: 1px solid var(--border); width: 100%; max-width: 400px; margin-top: 24px; }
-        .auth-card input { width: 100%; padding: 12px; margin-bottom: 16px; background: #121212; border: 1px solid var(--border); color: #fff; border-radius: 6px; }
+        body { background-color: #121212; color: #ffffff; font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body>
-    <header class="top-header">
-        <div class="logo-text">Audioly<span>.</span></div>
-    </header>
+<body class="bg-background text-white antialiased flex flex-col min-h-screen justify-center items-center p-6 selection:bg-primary/30">
 
-    <main class="auth-container">
-        <h1>Your Music. <span style="color: var(--primary); font-style: italic;">Perfected</span>.</h1>
-        <div class="auth-card">
-            <h3 id="auth-title" style="margin-bottom:16px;">Log In to Account</h3>
-            <input type="email" id="auth-email" placeholder="Email Address">
-            <input type="password" id="auth-password" placeholder="Password">
-            <input type="text" id="auth-username" placeholder="Username (Sign Up Only)" style="display: none;">
-            <button class="btn-primary" id="btn-auth-submit" style="width:100%;" onclick="handleAuthAction()">Continue</button>
-            <p id="auth-toggle-text" style="color:var(--text-muted); font-size:14px; text-align:center; margin-top:16px; cursor:pointer;" onclick="toggleAuthMode()">New to Audioly? Sign Up</p>
+    <div class="w-full max-w-md bg-surface border border-zinc-900 rounded-2xl p-8 shadow-2xl shadow-black/60 space-y-8">
+        
+        <div class="text-center space-y-2">
+            <span class="text-3xl font-black italic text-violet-500 tracking-tight">Audioly.</span>
+            <h2 id="form-title" class="text-xl font-bold tracking-tight text-zinc-200">Create Free Account</h2>
+            <p id="form-subtitle" class="text-xs text-zinc-500">Sign up below to access customized music profile dashboards.</p>
         </div>
-    </main>
+
+        <form id="auth-form" class="space-y-4" onsubmit="handleAuthFormSubmission(event)">
+            
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold uppercase tracking-wider text-zinc-400">Email Address</label>
+                <input type="email" id="auth-email-field" placeholder="name@example.com" required 
+                    class="w-full bg-[#121212] border-zinc-800 rounded-lg p-3 text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none transition-all text-sm">
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold uppercase tracking-wider text-zinc-400">Password</label>
+                <input type="password" id="auth-password-field" placeholder="••••••••" required minlength="6"
+                    class="w-full bg-[#121212] border-zinc-800 rounded-lg p-3 text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none transition-all text-sm">
+            </div>
+
+            <div id="username-input-container" class="flex flex-col gap-1.5">
+                <label class="text-xs font-bold uppercase tracking-wider text-zinc-400">Choose Profile Name</label>
+                <input type="text" id="auth-username-field" placeholder="e.g., lenard"
+                    class="w-full bg-[#121212] border-zinc-800 rounded-lg p-3 text-white focus:ring-2 focus:ring-violet-500 focus:border-transparent outline-none transition-all text-sm">
+            </div>
+
+            <button type="submit" id="submit-btn" 
+                class="w-full py-3 bg-violet-600 hover:bg-violet-500 active:scale-[0.98] text-white font-bold rounded-lg text-sm transition-all shadow-lg shadow-violet-600/10 mt-2">
+                Continue
+            </button>
+        </form>
+
+        <div class="text-center">
+            <button id="toggle-mode-link" class="text-xs text-zinc-400 hover:text-white transition-colors underline decoration-zinc-700 underline-offset-4" onclick="toggleFormAuthMode()">
+                Already have an account? Log In
+            </button>
+        </div>
+
+    </div>
 
     <script>
-        let isSignUpMode = false;
-        function toggleAuthMode() {
+        // Track state context rule parameters (Signup vs Login)
+        let isSignUpMode = true;
+
+        function toggleFormAuthMode() {
             isSignUpMode = !isSignUpMode;
-            document.getElementById('auth-title').innerText = isSignUpMode ? 'Create Free Account' : 'Log In to Account';
-            document.getElementById('auth-username').style.display = isSignUpMode ? 'block' : 'none';
-            document.getElementById('auth-toggle-text').innerText = isSignUpMode ? 'Already have an account? Log In' : 'New to Audioly? Sign Up';
+            
+            const formTitle = document.getElementById('form-title');
+            const formSubtitle = document.getElementById('form-subtitle');
+            const usernameContainer = document.getElementById('username-input-container');
+            const toggleLink = document.getElementById('toggle-mode-link');
+            const usernameField = document.getElementById('auth-username-field');
+
+            if (isSignUpMode) {
+                formTitle.innerText = "Create Free Account";
+                formSubtitle.innerText = "Sign up below to access customized music profile dashboards.";
+                usernameContainer.style.display = "flex";
+                usernameField.required = true;
+                toggleLink.innerText = "Already have an account? Log In";
+            } else {
+                formTitle.innerText = "Welcome Back";
+                formSubtitle.innerText = "Log into your account credentials to launch your session.";
+                usernameContainer.style.display = "none";
+                usernameField.required = false;
+                toggleLink.innerText = "Don't have an account? Sign Up";
+            }
         }
 
-        async function handleAuthAction() {
-            const client = getSupabase();
-            const email = document.getElementById('auth-email').value;
-            const password = document.getElementById('auth-password').value;
-            const username = document.getElementById('auth-username').value;
+        // Handle routing configurations
+        async function handleAuthFormSubmission(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('auth-email-field').value.trim();
+            const password = document.getElementById('auth-password-field').value.trim();
+            const sb = getSupabase();
+
+            if (!sb) {
+                alert("Supabase SDK is not loaded properly. Verify your API initializers.");
+                return;
+            }
 
             try {
                 if (isSignUpMode) {
-                    const { data, error } = await client.auth.signUp({ email, password });
-                    if (error) throw error;
-                    if (data.user) {
-                        await client.from('profiles').insert([{ id: data.user.id, username: username || email.split('@')[0] }]);
+                    const username = document.getElementById('auth-username-field').value.trim();
+                    if (!username) {
+                        alert("Please select a name for your initial streaming profile.");
+                        return;
                     }
-                    alert("Registration successful! Check your email for verification link.");
+
+                    // 1. Fire registration request down into Supabase Auth
+                    const { data: authData, error: authError } = await sb.auth.signUp({
+                        email: email,
+                        password: password
+                    });
+
+                    if (authError) throw authError;
+
+                    if (authData && authData.user) {
+                        // 2. Immediately insert their username into your user_profiles table as Profile 1
+                        const { error: profileError } = await sb.from('user_profiles').insert([
+                            {
+                                account_id: authData.user.id,
+                                profile_name: username,
+                                avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username)}`
+                            }
+                        ]);
+
+                        if (profileError) throw profileError;
+
+                        alert("Registration completed successfully! Redirecting to profile selection...");
+                        window.location.href = 'select-profile.html';
+                    }
                 } else {
-                    const { error } = await client.auth.signInWithPassword({ email, password });
-                    if (error) throw error;
-                    window.location.href = 'dashboard.html';
+                    // Standard Login Flow Integration
+                    const { data: logData, error: logError } = await sb.auth.signInWithPassword({
+                        email: email,
+                        password: password
+                    });
+
+                    if (logError) throw logError;
+
+                    if (logData && logData.user) {
+                        // Forward successful user logins straight into the profile gallery picker page
+                        window.location.href = 'select-profile.html';
+                    }
                 }
-            } catch (err) { alert(err.message); }
+            } catch (err) {
+                alert(err.message || "An authentication runtime error occurred.");
+                console.error(err);
+            }
         }
+
+        // Initialize form attributes on load sequence bounds
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('auth-username-field').required = true;
+        });
     </script>
 </body>
 </html>
