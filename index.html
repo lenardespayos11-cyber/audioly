@@ -122,20 +122,22 @@
                     if (authError) throw authError;
 
                     if (authData && authData.user) {
-                        // 2. Immediately insert their username into your user_profiles table as Profile 1
-                        const { error: profileError } = await sb.from('user_profiles').insert([
-                            {
-                                account_id: authData.user.id,
-                                profile_name: username,
-                                avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username)}`
-                            }
-                        ]);
+                    // 2. Immediately insert their username into your profiles table
+                    const { error: profileError } = await sb.from('profiles').insert([
+                        {
+                            id: authData.user.id, // Using 'id' to map to auth user id
+                            username: username,   // Matches data.username in accounts.html
+                            theme_preference: 'dark',
+                            notifications_enabled: true,
+                            privacy_incognito: false
+                        }
+                    ]);
 
-                        if (profileError) throw profileError;
+                    if (profileError) throw profileError;
 
-                        alert("Registration completed successfully! Redirecting to profile selection...");
-                        window.location.href = 'select-profile.html';
-                    }
+                    alert("Registration completed successfully! Redirecting to profile selection...");
+                    window.location.href = 'select-profile.html';
+                }
                 } else {
                     // Standard Login Flow Integration
                     const { data: logData, error: logError } = await sb.auth.signInWithPassword({
