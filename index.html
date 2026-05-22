@@ -65,7 +65,6 @@
     </div>
 
     <script>
-        // Track state context rule parameters (Signup vs Login)
         let isSignUpMode = true;
 
         function toggleFormAuthMode() {
@@ -92,7 +91,6 @@
             }
         }
 
-        // Handle routing configurations
         async function handleAuthFormSubmission(event) {
             event.preventDefault();
 
@@ -113,7 +111,6 @@
                         return;
                     }
 
-                    // 1. Fire registration request down into Supabase Auth
                     const { data: authData, error: authError } = await sb.auth.signUp({
                         email: email,
                         password: password
@@ -122,24 +119,21 @@
                     if (authError) throw authError;
 
                     if (authData && authData.user) {
-                    // 2. Immediately insert their username into your profiles table
-                    const { error: profileError } = await sb.from('profiles').insert([
-                        {
-                            id: authData.user.id, // Using 'id' to map to auth user id
-                            username: username,   // Matches data.username in accounts.html
-                            theme_preference: 'dark',
-                            notifications_enabled: true,
-                            privacy_incognito: false
-                        }
-                    ]);
+                        // FIXED: Using corrected table name 'user_profiles' and structural metadata columns
+                        const { error: profileError } = await sb.from('user_profiles').insert([
+                            {
+                                account_id: authData.user.id,
+                                profile_name: username,
+                                avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(username)}`
+                            }
+                        ]);
 
-                    if (profileError) throw profileError;
+                        if (profileError) throw profileError;
 
-                    alert("Registration completed successfully! Redirecting to profile selection...");
-                    window.location.href = 'select-profile.html';
-                }
+                        alert("Registration completed successfully! Redirecting to profile selection...");
+                        window.location.href = 'select-profile.html';
+                    }
                 } else {
-                    // Standard Login Flow Integration
                     const { data: logData, error: logError } = await sb.auth.signInWithPassword({
                         email: email,
                         password: password
@@ -148,17 +142,15 @@
                     if (logError) throw logError;
 
                     if (logData && logData.user) {
-                        // Forward successful user logins straight into the profile gallery picker page
                         window.location.href = 'select-profile.html';
                     }
                 }
             } catch (err) {
-                alert(err.message || "An authentication runtime error occurred.");
+                alert("System Error: " + (err.message || err.details || "An authentication error occurred."));
                 console.error(err);
             }
         }
 
-        // Initialize form attributes on load sequence bounds
         window.addEventListener('DOMContentLoaded', () => {
             document.getElementById('auth-username-field').required = true;
         });
